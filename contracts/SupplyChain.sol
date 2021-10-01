@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity >=0.5.16 <0.9.0;
 
 contract SupplyChain {
 
@@ -68,7 +67,7 @@ contract SupplyChain {
     _;
     uint _price = items[_sku].price;
     uint amountToRefund = msg.value - _price;
-    payable (items[_sku].buyer).transfer(amountToRefund);
+   (items[_sku].buyer).transfer(amountToRefund);
   }
 
   // For each of the following modifiers, use what you learned about modifiers
@@ -97,7 +96,7 @@ contract SupplyChain {
     _;
   }
 
-  constructor() {
+  constructor() public {
     // 1. Set the owner to the transaction sender
     owner = msg.sender;
     // 2. Initialize the sku count to 0. Question, is this necessary? No
@@ -110,17 +109,18 @@ contract SupplyChain {
     // 3. Emit the appropriate event
     // 4. return true
 
-    Item memory item = Item(
-    _name, 
-    skuCount, 
-    _price, 
-    State.ForSale, 
-    payable(msg.sender), 
-    payable(address(0))
-    );
-    items[skuCount] = item;
+     items[skuCount] = Item({
+      name: _name, 
+      sku: skuCount, 
+      price: _price, 
+      state: State.ForSale, 
+      seller: msg.sender, 
+      buyer: address(0)
+    });
+
     skuCount++;
     emit LogForSale(skuCount);
+
     return true;
   }
 
@@ -136,9 +136,10 @@ contract SupplyChain {
   //      sure the buyer is refunded any excess ether sent. 
   // 6. call the event associated with this function!
   function buyItem(uint _sku) public payable forSale(_sku) paidEnough(items[_sku].price) checkValue(_sku) {
-    payable(items[_sku].seller).transfer(items[_sku].price);
-    items[_sku].buyer = payable(msg.sender);
+     items[_sku].seller.transfer(items[_sku].price);
+    items[_sku].buyer = msg.sender;
     items[_sku].state = State.Sold;
+
     emit LogSold(_sku);
   }
 
